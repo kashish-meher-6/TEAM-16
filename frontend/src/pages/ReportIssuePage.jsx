@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Camera, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, MapPin, X, Image } from 'lucide-react';
 import { issueAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import MapComponent from "../components/MapComponent";
 
 const CATEGORIES = [
   { id: 'Road', label: 'Road', desc: 'Potholes, broken streetlights, or signs', icon: '🛣️' },
@@ -17,7 +18,8 @@ export default function ReportIssuePage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
-  const fileRef = useRef();
+  const cameraRef = useRef();
+  const galleryRef = useRef();
 
   const [form, setForm] = useState({
     category: '',
@@ -36,12 +38,11 @@ export default function ReportIssuePage() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        setForm(p => ({
-          ...p,
+        setForm(prev => ({
+          ...prev,
           locationLat: lat,
           locationLng: lng,
-          // Use coordinates as address if user hasn't typed one yet
-          locationAddress: p.locationAddress || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+          locationAddress: prev.locationAddress || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
         }));
         setLocationLoading(false);
         toast.success('GPS location detected');
@@ -56,7 +57,15 @@ export default function ReportIssuePage() {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setForm(p => ({ ...p, photo: file, photoPreview: URL.createObjectURL(file) }));
+    setForm(prev => ({
+      ...prev,
+      photo: file,
+      photoPreview: URL.createObjectURL(file)
+    }));
+  };
+
+  const removePhoto = () => {
+    setForm(prev => ({ ...prev, photo: null, photoPreview: '' }));
   };
 
   const handleSubmit = async (isDraft = false) => {
@@ -84,10 +93,14 @@ export default function ReportIssuePage() {
 
   return (
     <div className="min-h-screen bg-white">
+
       {/* Header */}
       <div className="px-4 pt-8 pb-4">
         <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)} className="text-gray-600">
+          <button
+            onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
+            className="text-gray-600"
+          >
             <ArrowLeft size={20} />
           </button>
           <div>
@@ -103,127 +116,228 @@ export default function ReportIssuePage() {
       </div>
 
       <div className="px-4 pb-24">
-        {/* Step 1 — Category */}
+
+        {/* STEP 1 — Category */}
         {step === 1 && (
           <div>
             <h3 className="text-xl font-bold mb-1 text-primary">Select Category</h3>
             <p className="text-gray-500 text-sm mb-5">What type of issue are you reporting?</p>
             <div className="grid grid-cols-2 gap-3">
               {CATEGORIES.map(cat => (
-                <button key={cat.id} onClick={() => setForm(p => ({ ...p, category: cat.id }))}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all ${form.category === cat.id ? 'border-primary bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <button
+                  key={cat.id}
+                  onClick={() => setForm(prev => ({ ...prev, category: cat.id }))}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    form.category === cat.id ? 'border-primary bg-orange-50' : 'border-gray-200'
+                  }`}
+                >
                   <span className="text-2xl mb-2 block">{cat.icon}</span>
                   <p className="font-semibold text-sm">{cat.label}</p>
-                  <p className="text-gray-500 text-xs mt-0.5 leading-tight">{cat.desc}</p>
+                  <p className="text-gray-500 text-xs">{cat.desc}</p>
                 </button>
               ))}
             </div>
-            <button disabled={!form.category} onClick={() => setStep(2)} className="btn-primary w-full mt-6">
+            <button
+              disabled={!form.category}
+              onClick={() => setStep(2)}
+              className="btn-primary w-full mt-6 flex items-center justify-center gap-2"
+            >
               Continue <ArrowRight size={16} />
             </button>
           </div>
         )}
 
-        {/* Step 2 — Details */}
+        {/* STEP 2 — Details + Photo Upload */}
         {step === 2 && (
           <div>
-            <h3 className="text-xl font-bold mb-1">Issue Details</h3>
-            <p className="text-gray-500 text-sm mb-5">Describe the issue clearly</p>
+            <h3 className="text-xl font-bold mb-1 text-primary">Issue Details</h3>
+            <p className="text-gray-500 text-sm mb-5">Describe the issue and add a photo</p>
+
             <div className="space-y-4">
+              <input
+                className="input"
+                placeholder="Title (e.g. Deep pothole on Main St)"
+                value={form.title}
+                onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+              />
+              <textarea
+                className="input h-28 resize-none"
+                placeholder="Description — what's wrong, how bad is it?"
+                value={form.description}
+                onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+              />
+
+              {/* ── Photo Upload Grid ── */}
               <div>
-                <label className="block text-sm font-medium mb-1.5">Title</label>
-                <input className="input" placeholder="e.g. Broken streetlight near park"
-                  value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Description</label>
-                <textarea className="input h-28 resize-none" placeholder="Provide details about the issue..."
-                  value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Photo (optional)</label>
-                <input type="file" accept="image/*" ref={fileRef} onChange={handlePhotoChange} className="hidden" />
-                {form.photoPreview ? (
-                  <div className="relative rounded-2xl overflow-hidden">
-                    <img src={form.photoPreview} alt="Preview" className="w-full h-40 object-cover" />
-                    <button onClick={() => setForm(p => ({ ...p, photo: null, photoPreview: '' }))}
-                      className="absolute top-2 right-2 bg-white rounded-full w-7 h-7 flex items-center justify-center text-gray-600 shadow">✕</button>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Photo Evidence</p>
+
+                {/* Hidden file inputs */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  ref={cameraRef}
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={galleryRef}
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+
+                {!form.photoPreview ? (
+                  /* Upload options grid */
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Take Photo */}
+                    <button
+                      onClick={() => cameraRef.current.click()}
+                      className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-2xl p-6 bg-gray-50 hover:border-primary hover:bg-orange-50 transition-all"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                        <Camera size={22} className="text-primary" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-700">Take Photo</p>
+                      <p className="text-xs text-gray-400 text-center">Use your camera</p>
+                    </button>
+
+                    {/* Upload from Gallery */}
+                    <button
+                      onClick={() => galleryRef.current.click()}
+                      className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-2xl p-6 bg-gray-50 hover:border-primary hover:bg-orange-50 transition-all"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                        <Image size={22} className="text-primary" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-700">Upload Image</p>
+                      <p className="text-xs text-gray-400 text-center">From gallery</p>
+                    </button>
                   </div>
                 ) : (
-                  <button onClick={() => fileRef.current.click()}
-                    className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center gap-2 text-gray-400 hover:border-primary hover:text-primary transition-colors">
-                    <Camera size={28} />
-                    <span className="text-sm">Tap to upload photo</span>
-                  </button>
+                  /* Photo Preview with remove button */
+                  <div className="relative rounded-2xl overflow-hidden">
+                    <img
+                      src={form.photoPreview}
+                      alt="Preview"
+                      className="w-full h-52 object-cover"
+                    />
+                    {/* Geo-tag badge overlay */}
+                    {form.locationLat && form.locationLng && (
+                      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                        <MapPin size={11} className="text-green-400" />
+                        <span>{Number(form.locationLat).toFixed(4)}, {Number(form.locationLng).toFixed(4)}</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={removePhoto}
+                      className="absolute top-3 right-3 bg-black/50 text-white rounded-full p-1"
+                    >
+                      <X size={16} />
+                    </button>
+                    {/* Retake option */}
+                    <button
+                      onClick={() => galleryRef.current.click()}
+                      className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full"
+                    >
+                      Change
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
-            <button disabled={!form.title || !form.description}
-              onClick={() => { setStep(3); detectLocation(); }} className="btn-primary w-full mt-6">
+
+            <button
+              disabled={!form.title || !form.description}
+              onClick={() => { setStep(3); detectLocation(); }}
+              className="btn-primary w-full mt-6 flex items-center justify-center gap-2"
+            >
               Continue <ArrowRight size={16} />
             </button>
           </div>
         )}
 
-        {/* Step 3 — Location */}
+        {/* STEP 3 — Location + Map + Geo-tag */}
         {step === 3 && (
           <div>
-            <h3 className="text-xl font-bold mb-1 text-primary">Confirm Location</h3>
-            <p className="text-gray-500 text-sm mb-5">Type your address or use GPS to auto-fill.</p>
+            <h3 className="text-xl font-bold text-primary mb-1">Confirm Location</h3>
+            <p className="text-gray-500 text-sm mb-4">Pin the exact location of the issue</p>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-4">
-              <div className="flex items-center gap-2 text-primary mb-3">
-                <MapPin size={16} />
-                {locationLoading
-                  ? <span className="text-gray-400 text-sm">Detecting GPS…</span>
-                  : <span className="text-sm font-medium">{form.locationAddress || 'No location yet'}</span>
-                }
-              </div>
+            <input
+              className="input"
+              placeholder="Enter address or area"
+              value={form.locationAddress}
+              onChange={e => setForm(prev => ({ ...prev, locationAddress: e.target.value }))}
+            />
 
-              <input className="input text-sm mb-3"
-                placeholder="Type full address (e.g. 12 Gandhi Street, Chennai)"
-                value={form.locationAddress}
-                onChange={e => setForm(p => ({ ...p, locationAddress: e.target.value }))} />
-
-              {form.locationLat && (
-                <div className="bg-gray-50 rounded-xl p-3 text-center text-xs text-gray-400 mb-3">
-                  📍 GPS: {Number(form.locationLat).toFixed(5)}, {Number(form.locationLng).toFixed(5)}
-                </div>
-              )}
-
-              <button type="button" onClick={detectLocation}
-                className="text-primary text-sm hover:underline">
-                📡 Use my current GPS location
-              </button>
-            </div>
-
-            {/* Summary */}
-            <div className="bg-orange-50 rounded-2xl p-4 mb-6">
-              <h4 className="font-semibold mb-3">📋 Summary</h4>
-              {[
-                ['Category', form.category],
-                ['Title', form.title],
-                ['Description', form.description],
-                ['Photo', form.photo ? '✅ Attached' : 'None'],
-                ['Location', form.locationAddress || '—'],
-              ].map(([k, v]) => (
-                <div key={k} className="flex gap-2 py-1.5 border-b border-orange-100 last:border-0">
-                  <span className="text-gray-500 text-sm w-24 flex-shrink-0">{k}</span>
-                  <span className="text-sm font-medium line-clamp-2">{v}</span>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={() => handleSubmit(false)} disabled={loading || !form.locationAddress}
-              className="btn-primary w-full mb-3">
-              {loading ? <span className="spinner" /> : 'Submit Report'}
+            <button
+              onClick={detectLocation}
+              className="flex items-center gap-2 text-primary text-sm font-medium mt-3"
+            >
+              <MapPin size={15} />
+              {locationLoading ? 'Detecting location...' : 'Use my GPS location'}
             </button>
-            <button onClick={() => handleSubmit(true)} disabled={loading}
-              className="w-full text-center text-gray-500 text-sm py-2 hover:text-gray-700">
+
+            {/* Map */}
+            {form.locationLat && form.locationLng ? (
+              <div className="mt-4 rounded-2xl overflow-hidden border border-gray-200">
+                <MapComponent
+                  lat={Number(form.locationLat)}
+                  lng={Number(form.locationLng)}
+                />
+              </div>
+            ) : (
+              <div className="mt-4 rounded-2xl bg-gray-100 h-44 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
+                <MapPin size={28} className="mb-2" />
+                <p className="text-sm">Tap "Use my GPS" to show map</p>
+              </div>
+            )}
+
+            {/* Geo-tagged photo preview */}
+            {form.photoPreview && form.locationLat && form.locationLng && (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-gray-700 mb-2">📍 Geo-tagged Photo</p>
+                <div className="relative rounded-2xl overflow-hidden">
+                  <img
+                    src={form.photoPreview}
+                    alt="Geo-tagged"
+                    className="w-full h-44 object-cover"
+                  />
+                  {/* Geo-tag stamp */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin size={13} className="text-green-400" />
+                      <span className="text-white text-xs font-mono">
+                        {Number(form.locationLat).toFixed(5)}, {Number(form.locationLng).toFixed(5)}
+                      </span>
+                    </div>
+                    <p className="text-white/70 text-xs mt-0.5">
+                      {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => handleSubmit(false)}
+              disabled={loading}
+              className="btn-primary w-full mt-6"
+            >
+              {loading ? 'Submitting...' : '🚀 Submit Issue'}
+            </button>
+
+            <button
+              onClick={() => handleSubmit(true)}
+              disabled={loading}
+              className="w-full mt-3 text-sm text-gray-400 underline"
+            >
               Save as Draft
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

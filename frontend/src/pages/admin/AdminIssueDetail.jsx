@@ -4,6 +4,7 @@ import { ArrowLeft, X, MapPin, User, Shield, Phone, Mail, Image } from 'lucide-r
 import { adminAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import MapComponent from '../../components/MapComponent';
 
 const DEPARTMENTS = [
   'Roads & Infrastructure',
@@ -101,8 +102,14 @@ export default function AdminIssueDetail() {
     : null;
   const citizen = issue.reportedBy;
 
+  // ✅ Correct path: location.coordinates.lat / lng
+  const lat = issue.location?.coordinates?.lat;
+  const lng = issue.location?.coordinates?.lng;
+  const hasLocation = lat && lng;
+
   return (
     <div className="min-h-screen bg-surface">
+
       {/* Nav */}
       <nav className="bg-dark text-white px-6 py-3 flex items-center justify-between sticky top-0 z-50">
         <Link to="/admin" className="flex items-center gap-2 text-white/70 hover:text-white text-sm">
@@ -116,7 +123,7 @@ export default function AdminIssueDetail() {
 
       <div className="max-w-3xl mx-auto px-6 py-8">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <span className="text-primary text-xs font-bold bg-primary/10 px-2 py-0.5 rounded">
             {issue.category.toUpperCase()} • {issue.issueId}
@@ -142,16 +149,53 @@ export default function AdminIssueDetail() {
           <span>Reported {new Date(issue.createdAt).toLocaleDateString()}</span>
         </div>
 
-        {/* ── Issue photo ── */}
+        {/* ── Photo with geo-tag stamp ── */}
         {photoSrc && (
           <div className="mt-5 rounded-2xl overflow-hidden cursor-pointer group relative"
             onClick={() => setPhotoOpen(true)}>
             <img src={photoSrc} alt={issue.title} className="w-full h-56 object-cover" />
+            {/* Geo-tag stamp */}
+            {hasLocation && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={12} className="text-green-400" />
+                  <span className="text-white text-xs font-mono">
+                    {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+                  </span>
+                </div>
+                <p className="text-white/60 text-xs mt-0.5">
+                  {new Date(issue.createdAt).toLocaleDateString('en-IN', {
+                    day: '2-digit', month: 'short', year: 'numeric'
+                  })}
+                </p>
+              </div>
+            )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <span className="opacity-0 group-hover:opacity-100 bg-white text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1 transition-opacity shadow">
                 <Image size={12} /> View full photo
               </span>
             </div>
+          </div>
+        )}
+
+        {/* ── Map Section ── */}
+        {hasLocation ? (
+          <div className="mt-4">
+            <h2 className="font-semibold mb-2 flex items-center gap-1.5">
+              <MapPin size={15} className="text-primary" /> Issue Location
+            </h2>
+            <div className="rounded-2xl overflow-hidden border border-gray-200">
+              <MapComponent lat={Number(lat)} lng={Number(lng)} />
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+              <MapPin size={11} />
+              {issue.location?.address} — {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl bg-gray-100 h-28 flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
+            <MapPin size={20} className="mb-1" />
+            <p className="text-xs">No location data available</p>
           </div>
         )}
 
@@ -185,7 +229,6 @@ export default function AdminIssueDetail() {
         {/* ── Status Timeline ── */}
         <div className="bg-white rounded-2xl shadow-card p-5 mt-4">
           <h2 className="font-semibold mb-4">Status Timeline</h2>
-          {/* Stepper */}
           <div className="flex items-center gap-1 mb-6">
             {['Reported', 'In Review', 'In Progress', 'Resolved'].map((s, i) => (
               <React.Fragment key={s}>
@@ -203,7 +246,6 @@ export default function AdminIssueDetail() {
               </React.Fragment>
             ))}
           </div>
-          {/* Events */}
           <div className="space-y-4">
             {issue.timeline?.map((event, i) => (
               <div key={i} className="flex gap-3">
@@ -220,7 +262,7 @@ export default function AdminIssueDetail() {
                     )}
                   </div>
                   <p className="text-gray-500 text-xs mt-0.5">{event.description}</p>
-                  <p className="text-gray-400 text-[10px] mt-0.5">{new Date(event.timestamp).toLocaleString()}</p>
+                  <p className="text-gray-400 text[10px] mt-0.5">{new Date(event.timestamp).toLocaleString()}</p>
                 </div>
               </div>
             ))}
@@ -242,7 +284,6 @@ export default function AdminIssueDetail() {
         <div className="bg-white rounded-2xl shadow-card p-5 mt-4">
           <h2 className="font-semibold text-primary mb-5">Update Issue</h2>
 
-          {/* Row 1: Status + Priority */}
           <div className="grid grid-cols-2 gap-5 mb-5">
             <div>
               <p className="text-sm font-medium mb-2">Change Status</p>
@@ -278,7 +319,6 @@ export default function AdminIssueDetail() {
             </div>
           </div>
 
-          {/* Row 2: Assignment */}
           <div className="bg-gray-50 rounded-xl p-4 mb-5">
             <p className="text-sm font-medium mb-3">Assign to Department / Officer</p>
             <div className="grid grid-cols-2 gap-3">
@@ -311,7 +351,6 @@ export default function AdminIssueDetail() {
             )}
           </div>
 
-          {/* Internal notes */}
           <div className="mb-4">
             <label className="text-sm font-medium block mb-1.5">
               Internal Notes <span className="text-gray-400 font-normal text-xs">(not visible to citizen)</span>
@@ -324,7 +363,6 @@ export default function AdminIssueDetail() {
             />
           </div>
 
-          {/* Official message */}
           <div className="mb-6">
             <label className="text-sm font-medium block mb-1.5">
               Official Message to Citizen <span className="text-gray-400 font-normal text-xs">(shown on their issue page)</span>
@@ -348,6 +386,7 @@ export default function AdminIssueDetail() {
             For authorized municipal staff only • Confidential Access
           </p>
         </div>
+
       </div>
 
       {/* Fullscreen photo lightbox */}
