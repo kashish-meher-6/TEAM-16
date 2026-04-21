@@ -11,6 +11,8 @@ const MemberSchema = new mongoose.Schema({
   internship: String,
   aboutYourAim: String,
   image: String,
+  document: String,
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Member', MemberSchema);
