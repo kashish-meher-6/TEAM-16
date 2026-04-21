@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Pages
 import LandingPage from './pages/LandingPage';
+import NewLandingPage from './pages/NewLandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -59,6 +60,7 @@ function AppRoutes() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/team16" element={<NewLandingPage />} />
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       {/* Admin login is NOT wrapped in PublicRoute — admins should always be able to reach it */}

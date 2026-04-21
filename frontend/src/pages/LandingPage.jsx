@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, MapPin, CheckCircle, Users, ArrowRight, Menu, X } from 'lucide-react';
+import { Shield, MapPin, CheckCircle, Users, ArrowRight, Menu, X, UserCheck } from 'lucide-react';
 
 export default function LandingPage() {
 
@@ -83,6 +83,13 @@ export default function LandingPage() {
             className="w-full md:w-auto border-2 border-white text-white font-semibold px-6 py-3 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
           >
             Sign In
+          </Link>
+
+          <Link 
+            to="/team16" 
+            className="w-full md:w-auto bg-primary-800 text-white font-semibold px-6 py-3 rounded-full hover:bg-primary-900 transition-colors flex items-center justify-center gap-2 border border-white/30"
+          >
+            <UserCheck size={16} /> Manage Team 16
           </Link>
         </div>
       </section>

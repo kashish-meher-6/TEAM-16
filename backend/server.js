@@ -17,6 +17,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve uploaded images statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/members', require('./routes/member.routes'));
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/issues', require('./routes/issue.routes'));
