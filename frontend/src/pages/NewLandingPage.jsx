@@ -30,21 +30,20 @@ function validateField(name, value) {
 }
 
 // ─── Add Member Page ──────────────────────────────────────────────────────────
+// ─── Add Member Page ──────────────────────────────────────────────────────────
 function AddMemberPage({ onBack }) {
   const [form, setForm] = useState({
     name: '', roll: '', year: '', degree: '',
     aboutProject: '', hobbies: '', certificate: '',
     internship: '', aboutYourAim: '',
-    image: null, document: null,
+    image: null,
   });
   const [preview, setPreview]     = useState(null);
-  const [docName, setDocName]     = useState('');
   const [loading, setLoading]     = useState(false);
   const [success, setSuccess]     = useState(false);
   const [errors, setErrors]       = useState({});
   const [touched, setTouched]     = useState({});
 
-  // ── Live validation on change ───────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
@@ -64,25 +63,6 @@ function AddMemberPage({ onBack }) {
       return;
     }
 
-    if (name === 'document' && files[0]) {
-      const file = files[0];
-      const allowed = ['application/pdf', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg', 'image/png'];
-      if (!allowed.includes(file.type)) {
-        setErrors(er => ({ ...er, document: 'Only PDF, DOC, DOCX, JPG or PNG allowed' }));
-        return;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        setErrors(er => ({ ...er, document: 'Document must be under 10 MB' }));
-        return;
-      }
-      setForm(f => ({ ...f, document: file }));
-      setDocName(file.name);
-      setErrors(er => ({ ...er, document: '' }));
-      return;
-    }
-
     setForm(f => ({ ...f, [name]: value }));
     if (touched[name]) {
       setErrors(er => ({ ...er, [name]: validateField(name, value) }));
@@ -95,18 +75,15 @@ function AddMemberPage({ onBack }) {
     setErrors(er => ({ ...er, [name]: validateField(name, value) }));
   };
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate all fields at once
     const newErrors = {};
     ['name','roll','year','degree','aboutProject','hobbies','certificate','internship','aboutYourAim']
       .forEach(k => {
         const err = validateField(k, form[k]);
         if (err) newErrors[k] = err;
       });
-    // Required fields
     if (!form.name.trim())   newErrors.name   = 'Name is required';
     if (!form.roll.trim())   newErrors.roll   = 'Roll number is required';
     if (!form.year.trim())   newErrors.year   = 'Year is required';
@@ -129,8 +106,7 @@ function AddMemberPage({ onBack }) {
       data.append('certificate',  form.certificate);
       data.append('internship',   form.internship);
       data.append('aboutYourAim', form.aboutYourAim);
-      if (form.image)    data.append('image',    form.image);
-      if (form.document) data.append('document', form.document);
+      if (form.image) data.append('image', form.image);
 
       await axios.post('http://localhost:5000/api/members', data);
       setSuccess(true);
@@ -144,11 +120,10 @@ function AddMemberPage({ onBack }) {
   const resetForm = () => {
     setSuccess(false);
     setForm({ name:'',roll:'',year:'',degree:'',aboutProject:'',hobbies:'',
-              certificate:'',internship:'',aboutYourAim:'',image:null,document:null });
-    setPreview(null); setDocName(''); setErrors({}); setTouched({});
+              certificate:'',internship:'',aboutYourAim:'',image:null });
+    setPreview(null); setErrors({}); setTouched({});
   };
 
-  // ── Success screen ──────────────────────────────────────────────────────────
   if (success) return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-6">
       <div className="bg-white rounded-3xl shadow-card p-10 text-center max-w-sm w-full">
@@ -165,7 +140,6 @@ function AddMemberPage({ onBack }) {
     </div>
   );
 
-  // ── Form ────────────────────────────────────────────────────────────────────
   const Field = ({ name, label, required, hint }) => (
     <div>
       <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 flex items-center gap-1">
@@ -211,23 +185,6 @@ function AddMemberPage({ onBack }) {
 
           <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate>
 
-            {/* ── Profile Photo ── */}
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-24 h-24 rounded-full border-4 border-primary/20 overflow-hidden bg-surface flex items-center justify-center">
-                {preview
-                  ? <img src={preview} alt="preview" className="w-full h-full object-cover" />
-                  : <Users size={32} className="text-gray-300" />}
-              </div>
-              <label className="cursor-pointer">
-                <span className="text-sm font-semibold text-primary border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5 transition-colors">
-                  Upload Photo
-                </span>
-                <input type="file" name="image" accept="image/*" onChange={handleChange} className="hidden" />
-              </label>
-              <p className="text-xs text-gray-400">JPG / PNG · max 5 MB</p>
-              {errors.image && <p className="text-red-500 text-xs">{errors.image}</p>}
-            </div>
-
             {/* ── Required: Name ── */}
             <Field name="name"   label="Full Name"    required hint="letters only, 2–50 chars" />
 
@@ -266,37 +223,30 @@ function AddMemberPage({ onBack }) {
             <Field name="certificate" label="Certificate" hint="max 150 chars" />
             <Field name="internship"  label="Internship"  hint="max 150 chars" />
 
-            {/* ── Document Upload ── */}
+            {/* ── Profile Photo (moved to bottom, label = Browse) ── */}
             <div>
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
-                Upload Document <span className="normal-case font-normal text-gray-400">(PDF / DOC / DOCX / Image · max 10 MB)</span>
+                Photo
               </label>
-              <label className={`flex items-center gap-3 border-2 border-dashed rounded-xl px-4 py-4 cursor-pointer transition-colors
-                ${errors.document ? 'border-red-400 bg-red-50' : 'border-gray-200 hover:border-primary/40 hover:bg-primary/5'}`}>
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <FileText size={18} className="text-primary" />
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full border-2 border-primary/20 overflow-hidden bg-surface flex items-center justify-center shrink-0">
+                  {preview
+                    ? <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                    : <Users size={24} className="text-gray-300" />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  {docName
-                    ? <p className="text-sm font-semibold text-gray-700 truncate">{docName}</p>
-                    : <p className="text-sm text-gray-400">Click to browse document…</p>}
-                  <p className="text-xs text-gray-400 mt-0.5">PDF, DOC, DOCX, JPG, PNG</p>
+                <div className="flex-1">
+                  <label className="cursor-pointer inline-flex items-center gap-2 border border-gray-300 bg-gray-50 text-gray-700 text-sm px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    Browse
+                    <input type="file" name="image" accept="image/*" onChange={handleChange} className="hidden" />
+                  </label>
+                  <p className="text-xs text-gray-400 mt-1">JPG / PNG · max 5 MB</p>
+                  {errors.image && <p className="text-red-500 text-xs mt-0.5">{errors.image}</p>}
+                  {preview && !errors.image && (
+                    <button type="button" onClick={() => { setForm(f=>({...f,image:null})); setPreview(null); }}
+                      className="text-xs text-gray-400 hover:text-red-500 mt-0.5 transition-colors">Remove</button>
+                  )}
                 </div>
-                <Upload size={16} className="text-gray-400 shrink-0" />
-                <input type="file" name="document"
-                  accept=".pdf,.doc,.docx,image/jpeg,image/png"
-                  onChange={handleChange} className="hidden" />
-              </label>
-              {errors.document && <p className="text-red-500 text-xs mt-1">{errors.document}</p>}
-              {docName && !errors.document && (
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-green-600 text-xs flex items-center gap-1">
-                    <CheckCircle size={12} /> File selected
-                  </p>
-                  <button type="button" onClick={() => { setForm(f=>({...f,document:null})); setDocName(''); }}
-                    className="text-xs text-gray-400 hover:text-red-500 transition-colors">Remove</button>
-                </div>
-              )}
+              </div>
             </div>
 
             {/* ── Submit ── */}
@@ -339,7 +289,7 @@ function ViewMembersPage({ onBack, onViewDetail }) {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-extrabold text-primary text-center mb-1">MEET OUR AMAZING TEAM</h1>
+        <h1 className="text-2xl font-extrabold text-primary text-center mb-1">MEET OUR AMAZING TEAM 16</h1>
         <div className="w-12 h-1 bg-primary mx-auto rounded mb-8" />
 
         {loading && <div className="flex justify-center py-20"><div className="spinner !w-8 !h-8" /></div>}
@@ -554,7 +504,7 @@ export default function NewLandingPage() {
       </section>
 
       <footer className="text-center py-5 text-gray-400 text-xs border-t">
-        © 2024 CivicLens · Team 16 — Student Team Management
+         2026 CivicLens · Team 16 — Student Team Management
       </footer>
     </div>
   );

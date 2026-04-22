@@ -2,68 +2,7 @@
 
 A full-stack MERN application for reporting, tracking, and resolving civic issues. Citizens report problems, track progress, and authorities manage resolutions — all in one platform.
 
----
 
-## 📁 Folder Structure
-
-```
-civiclens/
-├── backend/
-│   ├── config/
-│   │   └── cloudinary.js          # Cloudinary + Multer config
-│   ├── controllers/
-│   │   ├── auth.controller.js     # Auth logic
-│   │   ├── issue.controller.js    # Issue CRUD
-│   │   └── admin.controller.js    # Admin management
-│   ├── middleware/
-│   │   └── auth.middleware.js     # JWT protect + adminOnly
-│   ├── models/
-│   │   ├── User.js                # User schema
-│   │   └── Issue.js               # Issue schema with timeline
-│   ├── routes/
-│   │   ├── auth.routes.js
-│   │   ├── issue.routes.js
-│   │   ├── admin.routes.js
-│   │   ├── alert.routes.js
-│   │   └── upload.routes.js
-│   ├── .env.example
-│   ├── package.json
-│   └── server.js
-│
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   └── layout/
-    │   │       └── AppLayout.jsx   # Bottom nav layout
-    │   ├── contexts/
-    │   │   └── AuthContext.jsx     # Global auth state
-    │   ├── pages/
-    │   │   ├── LandingPage.jsx     # Public landing
-    │   │   ├── LoginPage.jsx
-    │   │   ├── RegisterPage.jsx
-    │   │   ├── AdminLoginPage.jsx
-    │   │   ├── HomePage.jsx        # Dashboard
-    │   │   ├── ReportIssuePage.jsx # 3-step report flow
-    │   │   ├── TrackIssuesPage.jsx # Issue list with filters
-    │   │   ├── IssueDetailPage.jsx # Issue detail + timeline
-    │   │   ├── AlertsPage.jsx      # Alert management
-    │   │   ├── ProfilePage.jsx     # User profile
-    │   │   ├── EditProfilePage.jsx
-    │   │   └── admin/
-    │   │       ├── AdminDashboard.jsx
-    │   │       └── AdminIssueDetail.jsx
-    │   ├── services/
-    │   │   └── api.js              # Axios service layer
-    │   ├── styles/
-    │   │   └── index.css
-    │   ├── App.jsx                 # Routes config
-    │   └── main.jsx
-    ├── .env.example
-    ├── index.html
-    ├── package.json
-    ├── tailwind.config.js
-    └── vite.config.js
-```
 
 ---
 
